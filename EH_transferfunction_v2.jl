@@ -1,5 +1,5 @@
 module EH_transferfunction
-export EHParamsConstructor, Tc, Tb
+export EHParamsConstructor, Tc, Tb, Tm
 
 # Define a record to hold all the fitting parameters 
 # for the Eisenstein & Hu (1998) transfer function
@@ -96,11 +96,22 @@ function Tb(k, parameters)
     C = 14.2 + 386/(1+69.9*q^1.08)
 
     term1 = log(exp(1) + 1.8 * q)/(log(exp(1) + 1.8 * q) + C * q^2)/(1 + (k * params.r_s / 5.2)^2)
-    term2 = params.αb / (1 + (params.βb/(k * params.r_s))^3) * exp(-(k/params.ksilk)^1.4)
-    
-    stilde = params.r_s/(1 + (params.βnode/(k * params.r_s))^3)^(1/3)
+    term2 = params.αb/(1 + (params.βb/(k * params.r_s))^3) * exp(-(k/params.ksilk)^1.4)
 
-    return (term1 + term2) * sin(k * stilde)/k/stilde
+    stilde = params.r_s/(1 + (params.βnode/(k * params.r_s))^3)^(1/3)
+    j0 = sin(k * stilde)/k/stilde
+    return (term1 + term2) * j0
+end
+
+function Tm(k, parameters) #relative to units of k i Mpc^-1
+    params = parameters
+
+    Tcdm = Tc(k, params)
+    Tbar = Tb(k, params)
+
+    om = params.omh2/(params.h)^2
+    ob = params.ombh2/(params.h)^2
+    return (ob/om) * Tbar + ((om-ob)/om) * Tcdm
 end
 
 # function Tdw(k, mu, z, h, omegaM0_h2, omegaB0_h2, sigma8, pnl)
