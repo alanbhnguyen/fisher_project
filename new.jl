@@ -18,7 +18,7 @@ function plotEH()
         push!(T_m, Tm(k, params_struct))
     end
 
-    plot(k_arr, [T_c, T_m], xaxis=:log, yaxis=:log)
+    plot(k_arr, T_m, xaxis=:log, yaxis=:log)
 
     savefig("EH3.png")
 end

@@ -103,7 +103,7 @@ function Tb(k, parameters)
     return (term1 + term2) * j0
 end
 
-function Tm(k, parameters) #relative to units of k i Mpc^-1
+function Tm(k, parameters) #relative to units of k in Mpc^-1
     params = parameters
 
     Tcdm = Tc(k, params)
@@ -113,14 +113,5 @@ function Tm(k, parameters) #relative to units of k i Mpc^-1
     ob = params.ombh2/(params.h)^2
     return (ob/om) * Tbar + ((om-ob)/om) * Tcdm
 end
-
-# function Tdw(k, mu, z, h, omegaM0_h2, omegaB0_h2, sigma8, pnl)
-#     k_star_inv = 8.355 * (sigma8/0.8) * pnl
-
-#     T_lin = EH_transferfunction(k, h, omegaM0_h2, omegaB0_h2)[3]
-#     T_nw = EH_transferfunction(k, h, omegaM0_h2, omegaB0_h2)[1]
-#     efactor = exp( -g_mu(mu, z, h, omegaM0_h2) * k .^2 * k_star_inv .^2 / 2)
-#     return T_lin .^2 * efactor + T_nw .^2 * ( 1 - efactor )
-# end
 
 end
