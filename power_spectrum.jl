@@ -2,10 +2,12 @@ include("EH_transferfunction_v2.jl")
 include("powerspectrum_parameters.jl")
 
 using QuadGK
+using HCubature
 using Plots
 using SpecialFunctions
 using .EH_transferfunction
 using .ps_parameters
+using Trapz
 
 transfer_params = EHParamsConstructor(0.1326/0.719^2, 0.0227/0.719^2, 0.719; theta_cmb=2.726/2.7)
 ps_params = PS_paramsconstructor(0.1326, 0.0227, 0.719, 0.963, 0.798, 0.5, 0, 1)
@@ -109,34 +111,36 @@ end
 function generate_logpowerspectrum_derivs(μ, k, z, ps_params, index)
     """
     indices
-    0: ln H
-    1: ln DA
-    2: ln (f_g σ_m)
-    3: ω_m
-    4: ω_b
-    5: n_s
+    1: ln H
+    2: ln DA
+    3: ln (f_g σ_m)
+    4: ω_m
+    5: ω_b
+    6: n_s
     """
     psz_params = PSz_paramsconstructor(z, ps_params)
 
-    if index == 0
+    if index == 1
         deriv = 1
-    elseif index == 1
-        deriv = -2
     elseif index == 2
-        deriv = 2 * psz_params.fg * sigma_m_2(ps_params.ns, 0, ps_params) * μ^2/(sigma_m_2(ps_params.ns, 0, ps_params) + psz_params.fg * sigma_m_2(ps_params.ns, 0, ps_params) * μ^2)
+        deriv = -2
     elseif index == 3
+        deriv = 2 * psz_params.fg * sigma_m_2(ps_params.ns, 0, ps_params) * μ^2/(sigma_m_2(ps_params.ns, 0, ps_params) + psz_params.fg * sigma_m_2(ps_params.ns, 0, ps_params) * μ^2)
+    elseif index == 4
         deriv = (-ω_m_deriv_term(μ,k,z,PS_paramsconstructor(0.1326*1.02, 0.0227, 0.719, 0.963, 0.798, 0.5, 0, 1),EHParamsConstructor(0.1326*1.02/0.719^2, 0.0227/0.719^2, 0.719; theta_cmb=2.726/2.7))
                  +8*ω_m_deriv_term(μ,k,z,PS_paramsconstructor(0.1326*1.01, 0.0227, 0.719, 0.963, 0.798, 0.5, 0, 1),EHParamsConstructor(0.1326*1.01/0.719^2, 0.0227/0.719^2, 0.719; theta_cmb=2.726/2.7))
                  -8*ω_m_deriv_term(μ,k,z,PS_paramsconstructor(0.1326*0.99, 0.0227, 0.719, 0.963, 0.798, 0.5, 0, 1),EHParamsConstructor(0.1326*0.99/0.719^2, 0.0227/0.719^2, 0.719; theta_cmb=2.726/2.7))
                  +ω_m_deriv_term(μ,k,z,PS_paramsconstructor(0.1326*0.98, 0.0227, 0.719, 0.963, 0.798, 0.5, 0, 1),EHParamsConstructor(0.1326*0.98/0.719^2, 0.0227/0.719^2, 0.719; theta_cmb=2.726/2.7)))/(0.12*ps_params.omm0)
-    elseif index == 4
+    elseif index == 5 #this says ω_m but i've changed the ω_b 
         deriv = (-ω_m_deriv_term(μ,k,z,PS_paramsconstructor(0.1326, 0.0227*1.02, 0.719, 0.963, 0.798, 0.5, 0, 1),EHParamsConstructor(0.1326/0.719^2, 0.0227*1.02/0.719^2, 0.719; theta_cmb=2.726/2.7))
                  +8*ω_m_deriv_term(μ,k,z,PS_paramsconstructor(0.1326, 0.0227*1.01, 0.719, 0.963, 0.798, 0.5, 0, 1),EHParamsConstructor(0.1326/0.719^2, 0.0227*1.01/0.719^2, 0.719; theta_cmb=2.726/2.7))
                  -8*ω_m_deriv_term(μ,k,z,PS_paramsconstructor(0.1326, 0.0227*0.99, 0.719, 0.963, 0.798, 0.5, 0, 1),EHParamsConstructor(0.1326/0.719^2, 0.0227*0.99/0.719^2, 0.719; theta_cmb=2.726/2.7))
                  +ω_m_deriv_term(μ,k,z,PS_paramsconstructor(0.1326, 0.0227*0.98, 0.719, 0.963, 0.798, 0.5, 0, 1),EHParamsConstructor(0.1326/0.719^2, 0.0227*0.98/0.719^2, 0.719; theta_cmb=2.726/2.7)))/(0.12*ps_params.omb0)
-    elseif index == 5
-        deriv = (-ns_deriv_term(μ, k, z, 1.02*ps_params.ns, ps_params) + 8*ns_deriv_term(μ, k, z, 1.01*ps_params.ns, ps_params) 
-                -8*ns_deriv_term(μ, k, z, 0.99*ps_params.ns, ps_params) + ns_deriv_term(μ, k, z, 0.98*ps_params.ns, ps_params)) / (0.12*ps_params.ns)
+    elseif index == 6
+        deriv = (-ns_deriv_term(μ, k, z, 1.02*ps_params.ns, ps_params) 
+                +8*ns_deriv_term(μ, k, z, 1.01*ps_params.ns, ps_params) 
+                -8*ns_deriv_term(μ, k, z, 0.99*ps_params.ns, ps_params) 
+                +ns_deriv_term(μ, k, z, 0.98*ps_params.ns, ps_params)) / (0.12*ps_params.ns)
     end
 
     return deriv
@@ -164,4 +168,32 @@ function plot_ps()
     savefig("./Uni/PhD/fisher_project/ps_test.png")
 end
 
-plot_ps()
+function fisher_matrix(z, ps_params, transfer_params, n, V_survey)
+
+    fisher = Array{Float64}(undef, 6, 6)
+    for i in range(1,6)
+        for j in range(1,6)
+            deriv1 = generate_logpowerspectrum_derivs(μ, k, z, ps_params, i)
+            deriv2 = generate_logpowerspectrum_derivs(μ, k, z, ps_params, j)
+            Veff = ((n * generate_powerspectrum(μ, k, z, ps_params, transfer_params))/
+                    (n * generate_powerspectrum(μ, k, z, ps_params, transfer_params)+1))^2 * V_survey
+            integrand = deriv1*deriv2*Veff/2/(2*pi)^3
+            fisher[i,j] = x
+        end
+    end
+end
+
+
+# print(m[:,2])
+# plot_ps()
+function sphere_integrand(p)
+    integrand = 2*pi*p[1]^2*sin(p[2])
+    return integrand
+end
+
+# sphere_integrand(1,1)
+hcubature(sphere_integrand, [0,0], [1,pi])
+for z in [1.1, 1.3, 1.5, 1.8, 2.2, 2.65]
+    kmin = 3.086e22/(0.436 * AngularDiameterDistance(z, ps_params))
+    println(kmin)
+end
